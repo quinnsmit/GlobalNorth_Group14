@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Page Guide Assistant",
+  "version": "1.0",
+  "description": "Creates a visual and written guide for any web page.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"]
+}

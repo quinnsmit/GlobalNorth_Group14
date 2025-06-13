@@ -1,9 +1,21 @@
+// Load stored guide based on the URL on popup open
+chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+    const urlKey = new URL(tab.url).origin;
+    chrome.storage.local.get([urlKey], (data) => {
+        if (data[urlKey]) {
+            const guideBox = document.getElementById('guideBox');
+            guideBox.innerHTML = `<strong>AI Guide:</strong>` + marked.parse(data[urlKey]);
+        }
+    });
+});
+
 document.getElementById('generateGuide').addEventListener('click', async () => {
     const guideBox = document.getElementById('guideBox');
     guideBox.innerHTML = '<em>Extracting page elements...</em>';
 
     try {
         let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const urlKey = new URL(tab.url).origin;
 
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
@@ -20,21 +32,26 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                 return;
             }
 
-            guideBox.innerHTML = '<em>Contacting AI service...</em>';
+            guideBox.innerHTML = '<em>Generating guide with AI...</em>';
 
-            const prompt = `Generate a helpful guide for a user based on these webpage elements:\n${elements.join('\n')}`;
+            const prompt = `You are a helpful assistant. Generate a clear, step-by-step usage guide for a webpage that includes these elements:\n${elements.join('\n')}`;
 
             try {
-                // Use Hugging Face Inference API (e.g. gpt2)
-                const response = await fetch('https://api-inference.huggingface.co/models/gpt2', {
-                    method: 'POST',
+                const response = await fetch("https://router.huggingface.co/novita/v3/openai/chat/completions", {
+                    method: "POST",
                     headers: {
-                        'Authorization': 'Bearer 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',
-                        'Content-Type': 'application/json'
+                        Authorization: "Bearer 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",
+                        "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        inputs: prompt,
-                        options: { wait_for_model: true }
+                        provider: "novita",
+                        model: "deepseek/deepseek-v3-0324",
+                        messages: [
+                            {
+                                role: "user",
+                                content: prompt
+                            }
+                        ]
                     })
                 });
 
@@ -45,8 +62,9 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                 }
 
                 const data = await response.json();
-                const generatedText = data[0]?.generated_text || 'No response from model.';
-                guideBox.innerHTML = `<strong>AI Guide:</strong><p>${generatedText}</p>`;
+                const aiMessage = data.choices?.[0]?.message?.content || 'No response from AI.';
+                chrome.storage.local.set({ [urlKey]: aiMessage });
+                guideBox.innerHTML = `<strong>AI Guide:</strong>` + marked.parse(aiMessage);
 
             } catch (apiErr) {
                 guideBox.innerText = 'Failed to contact AI service: ' + apiErr.message;

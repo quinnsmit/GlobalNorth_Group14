@@ -128,7 +128,7 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                 return;
             }
 
-            guideBox.innerHTML = '<em>Asking AI to build your guide...</em>';
+            guideBox.innerHTML = '<em>Generating a guide for this webpage using AI... This process can take up to a minute.</em>';
 
             const prompt = `You are a helpful assistant. Generate a clear, step-by-step usage guide for a webpage that includes these elements:\n${elements.join('\n')}`;
 
@@ -165,7 +165,7 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                     title: `Guide for ${new URL(tab.url).hostname}`,
                     content: aiMessage,
                     url: tab.url,
-                    folder: "My Generated",
+                    folder: "My Generated Guides",
                     isPremade: false,
                 };
 

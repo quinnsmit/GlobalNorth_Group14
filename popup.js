@@ -23,18 +23,23 @@ function generateId() {
 
 // Load guides from storage, merge premade, and display
 async function loadGuides() {
-    const data = await chrome.storage.local.get('guides');
-    let guides = data.guides || [];
+    try {
+        const data = await chrome.storage.local.get('guides');
+        let guides = data.guides || [];
 
-    // Merge premade guides, avoiding duplicates by id
-    const allGuidesMap = {};
-    guides.forEach(g => allGuidesMap[g.id] = g);
-    premadeGuides.forEach(pg => {
-        if (!allGuidesMap[pg.id]) allGuidesMap[pg.id] = pg;
-    });
+        // Merge premade guides, avoiding duplicates by id
+        const allGuidesMap = {};
+        guides.forEach(g => allGuidesMap[g.id] = g);
+        premadeGuides.forEach(pg => {
+            if (!allGuidesMap[pg.id]) allGuidesMap[pg.id] = pg;
+        });
 
-    const allGuides = Object.values(allGuidesMap);
-    displayFoldersAndGuides(allGuides);
+        const allGuides = Object.values(allGuidesMap);
+        displayFoldersAndGuides(allGuides);
+    } catch (e) {
+        const foldersDiv = document.getElementById('folders');
+        foldersDiv.innerText = "I couldn't load your saved guides. Please restart the extension and try again.";
+    }
 }
 
 // Display guides grouped by folder
@@ -94,14 +99,16 @@ function extractPageElements() {
         });
         return output;
     } catch (e) {
-        return [`Error during element extraction: ${e.message}`];
+        // Return an empty list so higher code shows friendly message
+        console.error('Element extraction error:', e);
+        return [];
     }
 }
 
 // Generate guide button click handler
 document.getElementById('generateGuide').addEventListener('click', async () => {
     const guideBox = document.getElementById('guideBox');
-    guideBox.innerHTML = '<em>Extracting page elements...</em>';
+    guideBox.innerHTML = '<em>Looking at the page contents...</em>';
 
     try {
         let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -111,17 +118,17 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
             func: extractPageElements,
         }, async (results) => {
             if (chrome.runtime.lastError) {
-                guideBox.innerText = 'Script Error: ' + chrome.runtime.lastError.message;
+                guideBox.innerText = "I couldn't read the page. Please refresh the page and try again. If this doesn't resolve the issue, then this is likely a page for which it is not possible to generate a guide.";
                 return;
             }
 
             const elements = results?.[0]?.result;
             if (!elements || !elements.length) {
-                guideBox.innerText = 'No usable elements found on the page.';
+                guideBox.innerText = "It is not possible to generate a guide for this page. Try checking a different page.";
                 return;
             }
 
-            guideBox.innerHTML = '<em>Generating guide with AI...</em>';
+            guideBox.innerHTML = '<em>Asking AI to build your guide...</em>';
 
             const prompt = `You are a helpful assistant. Generate a clear, step-by-step usage guide for a webpage that includes these elements:\n${elements.join('\n')}`;
 
@@ -145,13 +152,12 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    guideBox.innerText = `API Error ${response.status}: ${errorText}`;
+                    guideBox.innerText = "I'm having trouble getting a guide right now. Please check your internet connection and try again later.";
                     return;
                 }
 
                 const data = await response.json();
-                const aiMessage = data.choices?.[0]?.message?.content || 'No response from AI.';
+                const aiMessage = data.choices?.[0]?.message?.content || "The AI didn't send back any instructions. Please try again.";
 
                 // Save generated guide with current tab URL and title
                 const newGuide = {
@@ -163,27 +169,34 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                     isPremade: false,
                 };
 
-                // Save to storage
-                const storedData = await chrome.storage.local.get('guides');
-                const existingGuides = storedData.guides || [];
+                try {
+                    const storedData = await chrome.storage.local.get('guides');
+                    const existingGuides = storedData.guides || [];
 
-                // Replace any existing guide for same URL
-                const filteredGuides = existingGuides.filter(g => g.url !== newGuide.url);
+                    // Replace any existing guide for same URL
+                    const filteredGuides = existingGuides.filter(g => g.url !== newGuide.url);
 
-                filteredGuides.push(newGuide);
-                await chrome.storage.local.set({ guides: filteredGuides });
+                    filteredGuides.push(newGuide);
+                    await chrome.storage.local.set({ guides: filteredGuides });
+                } catch (e) {
+                    console.error('Storage save error:', e);
+                    // Inform user but continue to display guide
+                    const errorNote = document.createElement('div');
+                    errorNote.innerText = "Your guide was generated but couldn't be saved. Please try again.";
+                    guideBox.appendChild(errorNote);
+                }
 
                 // Update UI
                 guideBox.innerHTML = `<strong>${newGuide.title}</strong><br>` + marked.parse(aiMessage);
                 loadGuides();
 
             } catch (apiErr) {
-                guideBox.innerText = 'Failed to contact AI service: ' + apiErr.message;
+                guideBox.innerText = "I'm having trouble reaching the AI service. Please check your internet connection and try again.";
             }
         });
 
     } catch (err) {
-        guideBox.innerText = 'Unexpected error: ' + err.message;
+        guideBox.innerText = 'Something went wrong while preparing your guide. Please close and reopen this popup and try again.';
     }
 });
 
@@ -191,18 +204,22 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
 async function init() {
     await loadGuides();
 
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url) return;
+    try {
+        let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab || !tab.url) return;
 
-    const storedData = await chrome.storage.local.get('guides');
-    const existingGuides = storedData.guides || [];
+        const storedData = await chrome.storage.local.get('guides');
+        const existingGuides = storedData.guides || [];
 
-    const currentGuide = existingGuides.find(g => g.url === tab.url);
-    if (currentGuide) {
-        showGuideContent(currentGuide);
-    } else {
-        // Show first premade guide by default
-        showGuideContent(premadeGuides[0]);
+        const currentGuide = existingGuides.find(g => g.url === tab.url);
+        if (currentGuide) {
+            showGuideContent(currentGuide);
+        } else {
+            // Show first premade guide by default
+            showGuideContent(premadeGuides[0]);
+        }
+    } catch (e) {
+        console.error('Init error:', e);
     }
 }
 

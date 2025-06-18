@@ -122,6 +122,24 @@
             background-color: #303f9f;
         }
 
+        #accessibleMode {
+            margin: 3px 0px 10px 0px;
+            padding: 10px 12px;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            background-color: #3f51b5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.25s;
+            width: 100%;
+        }
+
+        #accessibleMode:hover {
+            background-color: #303f9f;
+        }
+
         #guideBox code {
             background: #e1e4ea;
             padding: 2px 4px;
@@ -146,6 +164,7 @@
 <h3>Page Guide Assistant</h3>
 <div id="container">
     <div id="sidebar">
+        <button id="accessibleMode">Enable Accessible Mode</button>
         <button id="generateGuide">Generate Guide</button>
         <h4>Guides</h4>
         <div id="folders"><em>Loading guides...</em></div>
@@ -153,6 +172,7 @@
     <div id="content">
         <div id="guideBox"><em>No guide selected.</em></div>
     </div>
+
 </div>
 
 <script src="marked.min.js"></script>

@@ -1,3 +1,5 @@
+console.log("idk why but without this log statement it doesnt work");
+
 // Premade guides hardcoded
 const premadeGuides = [
     {
@@ -211,12 +213,21 @@ async function init() {
         const storedData = await chrome.storage.local.get('guides');
         const existingGuides = storedData.guides || [];
 
-        const currentGuide = existingGuides.find(g => g.url === tab.url);
+        const currentGuide = existingGuides.find(g => g.url === tab.url || new URL(g.url).origin === new URL(tab.url).origin);
         if (currentGuide) {
             showGuideContent(currentGuide);
         } else {
-            // Show first premade guide by default
-            showGuideContent(premadeGuides[0]);
+            // Try checking chrome.storage.local for origin-based guide (older format)
+            const urlKey = new URL(tab.url).origin;
+            chrome.storage.local.get([urlKey], (data) => {
+                if (data[urlKey]) {
+                    const guideBox = document.getElementById('guideBox');
+                    guideBox.innerHTML = `<strong>AI Guide:</strong>` + marked.parse(data[urlKey]);
+                } else {
+                    // Show a premade guide as fallback
+                    showGuideContent(premadeGuides[0]);
+                }
+            });
         }
     } catch (e) {
         console.error('Init error:', e);
@@ -224,3 +235,22 @@ async function init() {
 }
 
 init();
+
+// Toggle Accessible Mode
+let accessibleModeOn = false;
+
+const accessibleBtn = document.getElementById('accessibleMode');
+if (accessibleBtn) {
+    accessibleBtn.addEventListener('click', async () => {
+        accessibleModeOn = !accessibleModeOn;
+
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        chrome.tabs.sendMessage(tab.id, {
+            type: 'TOGGLE_ACCESSIBLE_MODE',
+            enabled: accessibleModeOn
+        });
+
+        accessibleBtn.textContent = accessibleModeOn ? 'Disable Accessible Mode' : 'Enable Accessible Mode';
+    });
+}
+

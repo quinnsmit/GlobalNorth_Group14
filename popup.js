@@ -92,19 +92,131 @@ function showGuideContent(guide) {
 
 // Extract page elements from current tab
 function extractPageElements() {
-    try {
-        const elements = document.querySelectorAll('button, input, a');
-        const output = [];
-        elements.forEach((el, index) => {
-            const label = el.innerText || el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.tagName;
-            output.push(`Element ${index + 1}: ${label}`);
-        });
-        return output;
-    } catch (e) {
-        // Return an empty list so higher code shows friendly message
-        console.error('Element extraction error:', e);
-        return [];
+
+    function generateUniqueSelector(el) {
+        if (el.id) {
+            return `#${el.id}`;
+        }
+        
+        if (el.classList.length > 0) {
+            if (el.classList.length > 0) {
+                const firstClass = el.classList[0];
+                try {
+                    if (document.querySelectorAll(`.${firstClass}`).length === 1) {
+                        return `.${firstClass}`;
+                    }
+                } catch (e) {
+                    console.log("Invalid class name:", firstClass);
+                }
+            }
+        }
+        
+        const tagName = el.tagName.toLowerCase();
+
+        if (el.getAttribute('href')) {
+            return `${tagName}[href="${el.getAttribute('href')}"]`;
+        }
+        if (el.getAttribute('name')) {
+            return `${tagName}[name="${el.getAttribute('name')}"]`;
+        }
+        if (el.getAttribute('role')) {
+            return `${tagName}[role="${el.getAttribute('role')}"]`;
+        }
+
+        const text = el.textContent?.trim();
+        if (text && text.length > 0 && text.length < 20) {
+            return `${tagName}:contains("${text}")`;
+        }
+        return tagName;
     }
+    
+    const importantElements = [];
+    
+    try {
+        const interactiveElements = document.querySelectorAll('button, a, input, select, [role="button"], [tabindex="0"]');
+        
+        const limitedElements = Array.from(interactiveElements).slice(0, 100);
+        
+        limitedElements.forEach(el => {
+            try {
+                const uniqueSelector = generateUniqueSelector(el);
+                
+                let text = el.textContent?.trim() || el.placeholder || el.value || '';
+                if (text.length > 50) text = text.substring(0, 50) + '...';
+                
+                const type = el.tagName.toLowerCase();
+                
+                if (text) {
+                    importantElements.push(`${uniqueSelector} | ${type} | "${text}"`);
+                }
+            } catch (e) {
+                console.error("Error processing element:", e);
+            }
+        });
+    } catch (e) {
+        console.error("Error extracting elements:", e);
+    }
+    
+    return importantElements;
+}
+
+async function generateGuideWithAI(elementsList) {
+    const prompt = `Analyze this webpage and provide:
+
+        PART 1: Create a general guide about this page for a non-technical user, explaining its purpose and main features.
+
+        PART 2: Generate hover tooltips data in the following JSON format:
+        \`\`\`json-tooltips
+        {
+        "#element-selector": "Explanation of what this element does",
+        ".another-selector": "Another explanation"
+        }
+        \`\`\`
+
+        IMPORTANT: Use ONLY the exact CSS selectors I'm providing below. Do not invent or guess selectors.
+        Each line below contains "selector | element type | text" - use only the selector part (before the first |).
+
+        Here are the available elements and their selectors:
+        ${elementsList}
+        `;
+    const response = await fetch("https://router.huggingface.co/novita/v3/openai/chat/completions", {
+        method: "POST",
+        headers: {
+            Authorization: "Bearer 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",
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            provider: "novita",
+            model: "deepseek/deepseek-v3-0324",
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ]
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("API request failed");
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "The AI didn't send back any instructions. Please try again.";
+
+    console.log("AI response:", content);
+    // Split the response into PART 1 and PART 2
+    let part1 = "", part2 = "";
+    const part1Match = content.match(/PART 1:(.*?)(PART 2:|$)/is);
+    if (part1Match) {
+        part1 = part1Match[1].trim();
+    }
+    const part2Match = content.match(/PART 2:(.*)$/is);
+    if (part2Match) {
+        part2 = part2Match[1].trim();
+    }
+
+    return { part1, part2, raw: content };
 }
 
 // Generate guide button click handler
@@ -132,40 +244,18 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
 
             guideBox.innerHTML = '<em>Generating a guide for this webpage using AI... This process can take up to a minute.</em>';
 
-            const prompt = `You are a helpful assistant. Generate a clear, step-by-step usage guide for a webpage that includes these elements:\n${elements.join('\n')}`;
+            const elementsList = elements.join('\n');
 
             try {
-                const response = await fetch("https://router.huggingface.co/novita/v3/openai/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        Authorization: "Bearer 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",
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        provider: "novita",
-                        model: "deepseek/deepseek-v3-0324",
-                        messages: [
-                            {
-                                role: "user",
-                                content: prompt
-                            }
-                        ]
-                    })
-                });
+                const aiMessage = await generateGuideWithAI(elementsList);
 
-                if (!response.ok) {
-                    guideBox.innerText = "I'm having trouble getting a guide right now. Please check your internet connection and try again later.";
-                    return;
-                }
+                const tooltipData = extractTooltipData(aiMessage.part2);
+                console.log("Extracted tooltip data:", tooltipData);
 
-                const data = await response.json();
-                const aiMessage = data.choices?.[0]?.message?.content || "The AI didn't send back any instructions. Please try again.";
-
-                // Save generated guide with current tab URL and title
                 const newGuide = {
                     id: generateId(),
                     title: `Guide for ${new URL(tab.url).hostname}`,
-                    content: aiMessage,
+                    content: aiMessage.part1,
                     url: tab.url,
                     folder: "My Generated Guides",
                     isPremade: false,
@@ -188,9 +278,22 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                     guideBox.appendChild(errorNote);
                 }
 
-                // Update UI
-                guideBox.innerHTML = `<strong>${newGuide.title}</strong><br>` + marked.parse(aiMessage);
+                guideBox.innerHTML = `<strong>${newGuide.title}</strong><br>` + marked.parse(aiMessage.part1);
                 loadGuides();
+
+                if (Object.keys(tooltipData).length > 0) {
+                    try {
+                        let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                        chrome.tabs.sendMessage(tab.id, {
+                            action: "activateGuide", 
+                            guideData: tooltipData
+                        }, function(response) {
+                            console.log("Tooltips automatically activated:", response);
+                        });
+                    } catch (err) {
+                        console.error("Error activating tooltips:", err);
+                    }
+                }
 
             } catch (apiErr) {
                 guideBox.innerText = "I'm having trouble reaching the AI service. Please check your internet connection and try again.";
@@ -201,6 +304,19 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
         guideBox.innerText = 'Something went wrong while preparing your guide. Please close and reopen this popup and try again.';
     }
 });
+
+function extractTooltipData(part2) {
+    const jsonMatch = part2.match(/```json-tooltips\s*(\{[\s\S]*?\})\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+        try {
+            return JSON.parse(jsonMatch[1]);
+        } catch (e) {
+            console.error("Error parsing tooltip JSON:", e);
+            return {};
+        }
+    }
+    return {};
+}
 
 // On popup load, load guides and if any match current tab URL, show that guide
 async function init() {

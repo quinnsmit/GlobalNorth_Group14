@@ -3,102 +3,177 @@
 <head>
     <title>Page Guide Assistant</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-
         body {
-            font-family: 'Inter', sans-serif;
-            padding: 20px;
-            width: 320px;
-            background: #fff;
-            color: #333;
-            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 12px;
+            width: 500px;
+            height: 380px;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
         }
 
         h3 {
+            margin: 0 0 12px 0;
             font-weight: 600;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-            color: #222;
-            text-align: center;
-            user-select: none;
+            font-size: 20px;
+            color: #2c3e50;
         }
 
-        button {
-            width: 100%;
-            padding: 12px 16px;
-            background: linear-gradient(90deg, #4f46e5, #3b82f6);
-            border: none;
+        #container {
+            display: flex;
+            gap: 15px;
+            flex-grow: 1;
+            height: 100%; /* Fill available height */
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 160px; /* fixed width so it never shrinks */
+            border-right: 1px solid #ddd;
+            padding-right: 10px;
+            overflow-y: auto; /* scroll if sidebar content overflows vertically */
+            flex-shrink: 0; /* prevent shrinking */
+        }
+
+        #content {
+            flex-grow: 1; /* take remaining space */
+            overflow-y: auto; /* scroll vertically if content too tall */
+            background: #fafafa;
             border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.3s ease;
-            box-shadow: 0 4px 8px rgb(59 130 246 / 0.3);
-            user-select: none;
-        }
-
-        button:hover {
-            background: linear-gradient(90deg, #4338ca, #2563eb);
-            box-shadow: 0 6px 12px rgb(37 99 235 / 0.5);
-        }
-
-        #guideBox {
-            margin-top: 20px;
-            border-radius: 12px;
-            padding: 16px;
-            min-height: 160px;
-            max-height: 300px;
-            overflow-y: auto; /* vertical scroll if needed */
+            padding: 12px;
+            box-shadow: inset 0 0 6px #ddd;
+            font-size: 14px;
+            color: #222;
+            min-width: 0; /* important for flexbox text overflow */
             overflow-x: hidden; /* hide horizontal scroll */
-            background: #f9fafb;
-            box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
-            font-size: 0.95rem;
-            line-height: 1.4;
-            color: #444;
-            white-space: normal;
             word-wrap: break-word; /* break long words */
-            word-break: break-word;
+            white-space: pre-wrap; /* wrap preformatted text */
         }
 
+        #content pre {
+            white-space: pre-wrap !important; /* wrap code blocks */
+            word-wrap: break-word;
+            overflow-x: hidden !important; /* no horizontal scroll in code */
+        }
 
-        /* Code styling inside guide */
+        #sidebar h4 {
+            margin-top: 0;
+            font-weight: 600;
+            font-size: 16px;
+            color: #34495e;
+            margin-bottom: 8px;
+        }
+
+        #folders {
+            font-size: 14px;
+            color: #34495e;
+        }
+
+        #folders strong {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            color: #1a237e;
+            border-bottom: 1px solid #bbb;
+            padding-bottom: 3px;
+        }
+
+        #folders div > div {
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #folders div > div:hover {
+            background-color: #c5cae9;
+            color: #1a237e;
+        }
+
+        #content strong {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: block;
+            color: #2c3e50;
+        }
+
+        #generateGuide {
+            margin: 3px 0px 10px 0px;
+            padding: 10px 12px;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            background-color: #3f51b5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.25s;
+            width: 100%;
+        }
+
+        #generateGuide:hover {
+            background-color: #303f9f;
+        }
+
+        #accessibleMode {
+            margin: 3px 0px 10px 0px;
+            padding: 10px 12px;
+            font-weight: 600;
+            font-size: 14px;
+            color: white;
+            background-color: #3f51b5;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.25s;
+            width: 100%;
+        }
+
+        #accessibleMode:hover {
+            background-color: #303f9f;
+        }
+
         #guideBox code {
-            background: #e5e7eb;
-            padding: 2px 6px;
+            background: #e1e4ea;
+            padding: 2px 4px;
             border-radius: 4px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9rem;
+            font-family: monospace;
         }
 
         #guideBox pre {
-            background: #f3f4f6;
-            padding: 12px;
-            border-radius: 8px;
+            background: #f0f2f5;
+            padding: 10px;
             overflow-x: auto;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9rem;
-            margin: 10px 0;
+            border-radius: 6px;
+            margin-top: 8px;
         }
 
-        /* Scrollbar for guideBox */
-        #guideBox::-webkit-scrollbar {
-            width: 8px;
-        }
-        #guideBox::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 4px;
-        }
-        #guideBox::-webkit-scrollbar-track {
-            background-color: #f9fafb;
+        em {
+            color: #666;
         }
     </style>
 </head>
 <body>
 <h3>Page Guide Assistant</h3>
-<button id="generateGuide">Generate Page Guide</button>
-<div id="guideBox"><em>No guide generated yet.</em></div>
+<div id="container">
+    <div id="sidebar">
+        <button id="accessibleMode">Enable Accessible Mode</button>
+        <button id="generateGuide">Generate Guide</button>
+        <h4>Guides</h4>
+        <div id="folders"><em>Loading guides...</em></div>
+    </div>
+    <div id="content">
+        <div id="guideBox"><em>No guide selected.</em></div>
+    </div>
+
+</div>
 
 <script src="marked.min.js"></script>
 <script src="popup.js"></script>

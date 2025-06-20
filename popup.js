@@ -370,3 +370,37 @@ if (accessibleBtn) {
     });
 }
 
+// === Ask About This Element Feature ===
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'ASK_ELEMENT_AI') {
+        const { question, elemInfo } = request;
+        const prompt = `You are helping an elderly user understand a webpage. Here is a description of a webpage element:\n\nElement HTML: ${elemInfo.html}\nElement text: ${elemInfo.text}\nElement tag: ${elemInfo.tag}\nElement type: ${elemInfo.type}\nAria-label: ${elemInfo.ariaLabel}\nPlaceholder: ${elemInfo.placeholder}\n\nThe user asks: '${question}'\n\nPlease provide a clear, simple, and concise answer in language that is easy for elderly people to understand. Avoid technical jargon. If the element is a button or input, explain what it does or what the user should enter. If the purpose is unclear, say so in a friendly way.`;
+        fetch("https://router.huggingface.co/novita/v3/openai/chat/completions", {
+            method: "POST",
+            headers: {
+                Authorization: "Bearer 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",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                provider: "novita",
+                model: "deepseek/deepseek-v3-0324",
+                messages: [
+                    {
+                        role: "user",
+                        content: prompt
+                    }
+                ]
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const answer = data.choices?.[0]?.message?.content || "Sorry, I couldn't get an answer.";
+            sendResponse({ answer });
+        })
+        .catch(() => {
+            sendResponse({ answer: "Sorry, I couldn't get an answer." });
+        });
+        return true; // Keep the message channel open for async response
+    }
+});
+

@@ -205,3 +205,87 @@ function injectTooltipStyles() {
         document.head.appendChild(styleEl);
     }
 }
+
+// === Ask About This Element Feature ===
+(function() {
+    let askOverlay = null;
+    let lastTarget = null;
+    
+    function createAskOverlay(target) {
+        removeAskOverlay();
+        lastTarget = target;
+        const rect = target.getBoundingClientRect();
+        askOverlay = document.createElement('div');
+        askOverlay.style.position = 'fixed';
+        askOverlay.style.left = (rect.left + window.scrollX) + 'px';
+        askOverlay.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+        askOverlay.style.zIndex = 2147483647;
+        askOverlay.style.background = '#fff';
+        askOverlay.style.border = '2px solid #3f51b5';
+        askOverlay.style.borderRadius = '8px';
+        askOverlay.style.padding = '12px';
+        askOverlay.style.boxShadow = '0 2px 12px #0002';
+        askOverlay.style.fontSize = '16px';
+        askOverlay.style.maxWidth = '320px';
+        askOverlay.style.minWidth = '220px';
+        askOverlay.style.display = 'flex';
+        askOverlay.style.flexDirection = 'column';
+        askOverlay.style.gap = '8px';
+        askOverlay.style.userSelect = 'auto';
+        askOverlay.innerHTML = `
+            <label style="font-weight:600;">Ask about this element:</label>
+            <input id="askElemInput" type="text" placeholder="e.g. What does this do?" style="font-size:16px;padding:6px;border-radius:4px;border:1px solid #bbb;outline:none;" />
+            <button id="askElemBtn" style="background:#3f51b5;color:#fff;border:none;padding:7px 0;border-radius:4px;font-size:16px;cursor:pointer;">Ask</button>
+            <button id="closeAskElem" style="background:#eee;color:#333;border:none;padding:4px 0;border-radius:4px;font-size:13px;cursor:pointer;">Close</button>
+            <div id="askElemAnswer" style="margin-top:6px;font-size:15px;color:#222;"></div>
+        `;
+        document.body.appendChild(askOverlay);
+        document.getElementById('askElemInput').focus();
+        document.getElementById('closeAskElem').onclick = removeAskOverlay;
+        document.getElementById('askElemBtn').onclick = async function() {
+            const question = document.getElementById('askElemInput').value.trim();
+            if (!question) return;
+            document.getElementById('askElemAnswer').innerHTML = '<em>Thinking...</em>';
+            const elemInfo = {
+                html: lastTarget.outerHTML,
+                text: lastTarget.innerText || lastTarget.value || lastTarget.placeholder || '',
+                tag: lastTarget.tagName,
+                type: lastTarget.type || '',
+                ariaLabel: lastTarget.getAttribute('aria-label') || '',
+                placeholder: lastTarget.getAttribute('placeholder') || ''
+            };
+            chrome.runtime.sendMessage({
+                action: 'ASK_ELEMENT_AI',
+                question,
+                elemInfo
+            }, function(response) {
+                if (response && response.answer) {
+                    document.getElementById('askElemAnswer').innerText = response.answer;
+                } else {
+                    document.getElementById('askElemAnswer').innerText = 'Sorry, I could not get an answer.';
+                }
+            });
+        };
+    }
+    function removeAskOverlay() {
+        if (askOverlay) {
+            askOverlay.remove();
+            askOverlay = null;
+            lastTarget = null;
+        }
+    }
+    // Right-click context menu
+    document.addEventListener('contextmenu', function(e) {
+        if (!e.target.closest('body')) return;
+        setTimeout(() => {
+            if (askOverlay) removeAskOverlay();
+            if (e.target && e.target !== document.body && e.target.nodeType === 1) {
+                createAskOverlay(e.target);
+            }
+        }, 10);
+    });
+    // Remove overlay on page scroll or navigation
+    window.addEventListener('scroll', removeAskOverlay, true);
+    window.addEventListener('resize', removeAskOverlay, true);
+    window.addEventListener('blur', removeAskOverlay, true);
+})();

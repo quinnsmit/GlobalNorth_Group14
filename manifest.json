@@ -3,6 +3,11 @@
   "name": "Page Guide Assistant",
   "version": "1.0",
   "description": "Creates a visual and written guide for any web page.",
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  },
   "action": {
     "default_popup": "popup.html"
   },

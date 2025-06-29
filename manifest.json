@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Page Guide Assistant",
-  "version": "1.0",
+  "name": "Website Helper",
+  "version": "2.0",
   "description": "Creates a visual and written guide for any web page.",
   "icons": {
     "16": "logo.png",

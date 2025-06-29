@@ -4,16 +4,16 @@ console.log("idk why but without this log statement it doesnt work");
 const premadeGuides = [
     {
         id: "p1",
-        title: "Common Login Guide",
-        content: "1. Enter your username.\n2. Enter your password.\n3. Click the 'Login' button.",
-        folder: "Premade Guides",
+        title: "How to Log In",
+        content: "1. Type your username in the first box.\n2. Type your password in the second box.\n3. Click the 'Log In' button.",
+        folder: "Ready-Made Guides",
         isPremade: true,
     },
     {
         id: "p2",
-        title: "Checkout Steps",
-        content: "1. Add items to your cart.\n2. Enter shipping information.\n3. Select payment method.\n4. Confirm your order.",
-        folder: "Premade Guides",
+        title: "How to Buy Something Online",
+        content: "1. Add items to your shopping cart.\n2. Fill in your address for delivery.\n3. Choose how you want to pay.\n4. Click to complete your order.",
+        folder: "Ready-Made Guides",
         isPremade: true,
     },
 ];
@@ -40,11 +40,11 @@ async function loadGuides() {
         displayFoldersAndGuides(allGuides);
     } catch (e) {
         const foldersDiv = document.getElementById('folders');
-        foldersDiv.innerText = "I couldn't load your saved guides. Please restart the extension and try again.";
+        foldersDiv.innerText = "I couldn't load your saved guides. Please close and reopen the helper and try again.";
     }
 }
 
-// Display guides grouped by folder
+ // Group by folder
 function displayFoldersAndGuides(guides) {
     const foldersDiv = document.getElementById('folders');
     foldersDiv.innerHTML = '';
@@ -161,22 +161,22 @@ function extractPageElements() {
 }
 
 async function generateGuideWithAI(elementsList) {
-    const prompt = `Analyze this webpage and provide:
+    const prompt = `Look at this webpage and help me understand it better:
 
-        PART 1: Create a general guide about this page for a non-technical user, explaining its purpose and main features.
+        PART 1: Write a simple guide about what this webpage is for and how to use it. Write it like you're explaining to someone who doesn't know much about computers. Use simple words and short sentences.
 
-        PART 2: Generate hover tooltips data in the following JSON format:
+        PART 2: Create helpful tips that will pop up when someone points their mouse at buttons and links on the page. Use this format:
         \`\`\`json-tooltips
         {
-        "#element-selector": "Explanation of what this element does",
-        ".another-selector": "Another explanation"
+        "#element-selector": "Simple explanation of what this button or link does",
+        ".another-selector": "Another simple explanation"
         }
         \`\`\`
 
-        IMPORTANT: Use ONLY the exact CSS selectors I'm providing below. Do not invent or guess selectors.
-        Each line below contains "selector | element type | text" - use only the selector part (before the first |).
+        IMPORTANT: Only use the exact button and link names I'm giving you below. Don't make up new ones.
+        Each line below shows "selector | type | text" - only use the selector part (before the first |).
 
-        Here are the available elements and their selectors:
+        Here are the buttons and links I found on this page:
         ${elementsList}
         `;
     const response = await fetch("https://router.huggingface.co/novita/v3/openai/chat/completions", {
@@ -198,11 +198,11 @@ async function generateGuideWithAI(elementsList) {
     });
 
     if (!response.ok) {
-        throw new Error("API request failed");
+        throw new Error("The helper service isn't working right now");
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "The AI didn't send back any instructions. Please try again.";
+    const content = data.choices?.[0]?.message?.content || "The helper didn't create any instructions. Please try again.";
 
     console.log("AI response:", content);
     // Split the response into PART 1 and PART 2
@@ -219,10 +219,10 @@ async function generateGuideWithAI(elementsList) {
     return { part1, part2, raw: content };
 }
 
-// Generate guide button click handler
+// Create guide button click handler
 document.getElementById('generateGuide').addEventListener('click', async () => {
     const guideBox = document.getElementById('guideBox');
-    guideBox.innerHTML = '<em>Looking at the page contents...</em>';
+    guideBox.innerHTML = '<em>Looking at what\'s on this page...</em>';
 
     try {
         let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -232,17 +232,17 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
             func: extractPageElements,
         }, async (results) => {
             if (chrome.runtime.lastError) {
-                guideBox.innerText = "I couldn't read the page. Please refresh the page and try again. If this doesn't resolve the issue, then this is likely a page for which it is not possible to generate a guide.";
+                guideBox.innerText = "I couldn't read this page. Please refresh the page and try again. If this doesn't work, this page might not be compatible with the helper.";
                 return;
             }
 
             const elements = results?.[0]?.result;
             if (!elements || !elements.length) {
-                guideBox.innerText = "It is not possible to generate a guide for this page. Try checking a different page.";
+                guideBox.innerText = "I can't create a guide for this page. Try visiting a different website.";
                 return;
             }
 
-            guideBox.innerHTML = '<em>Generating a guide for this webpage using AI... This process can take up to a minute.</em>';
+            guideBox.innerHTML = '<em>Creating a helpful guide for this page... This might take up to a minute.</em>';
 
             const elementsList = elements.join('\n');
 
@@ -257,7 +257,7 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                     title: `Guide for ${new URL(tab.url).hostname}`,
                     content: aiMessage.part1,
                     url: tab.url,
-                    folder: "My Generated Guides",
+                    folder: "My Website Guides",
                     isPremade: false,
                 };
 
@@ -274,7 +274,7 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                     console.error('Storage save error:', e);
                     // Inform user but continue to display guide
                     const errorNote = document.createElement('div');
-                    errorNote.innerText = "Your guide was generated but couldn't be saved. Please try again.";
+                    errorNote.innerText = "Your guide was created but couldn't be saved. Please try again.";
                     guideBox.appendChild(errorNote);
                 }
 
@@ -288,7 +288,7 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                             action: "activateGuide", 
                             guideData: tooltipData
                         }, function(response) {
-                            console.log("Tooltips automatically activated:", response);
+                            console.log("Help tips automatically turned on:", response);
                         });
                     } catch (err) {
                         console.error("Error activating tooltips:", err);
@@ -296,12 +296,12 @@ document.getElementById('generateGuide').addEventListener('click', async () => {
                 }
 
             } catch (apiErr) {
-                guideBox.innerText = "I'm having trouble reaching the AI service. Please check your internet connection and try again.";
+                guideBox.innerText = "I'm having trouble connecting to the helper service. Please check your internet connection and try again.";
             }
         });
 
     } catch (err) {
-        guideBox.innerText = 'Something went wrong while preparing your guide. Please close and reopen this popup and try again.';
+        guideBox.innerText = 'Something went wrong. Please close and reopen this helper window and try again.';
     }
 });
 
@@ -338,7 +338,7 @@ async function init() {
             chrome.storage.local.get([urlKey], (data) => {
                 if (data[urlKey]) {
                     const guideBox = document.getElementById('guideBox');
-                    guideBox.innerHTML = `<strong>AI Guide:</strong>` + marked.parse(data[urlKey]);
+                    guideBox.innerHTML = `<strong>Helper Guide:</strong>` + marked.parse(data[urlKey]);
                 } else {
                     showHowItWorksGuide();
                 }
@@ -365,7 +365,7 @@ if (accessibleBtn) {
             enabled: accessibleModeOn
         });
 
-        accessibleBtn.textContent = accessibleModeOn ? 'Disable Accessible Mode' : 'Enable Accessible Mode';
+        accessibleBtn.textContent = accessibleModeOn ? 'Turn Off Easy Reading Mode' : 'Turn On Easy Reading Mode';
     });
 }
 
@@ -373,7 +373,18 @@ if (accessibleBtn) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'ASK_ELEMENT_AI') {
         const { question, elemInfo } = request;
-        const prompt = `You are helping an elderly user understand a webpage. Here is a description of a webpage element:\n\nElement HTML: ${elemInfo.html}\nElement text: ${elemInfo.text}\nElement tag: ${elemInfo.tag}\nElement type: ${elemInfo.type}\nAria-label: ${elemInfo.ariaLabel}\nPlaceholder: ${elemInfo.placeholder}\n\nThe user asks: '${question}'\n\nPlease provide a clear, simple, and concise answer in language that is easy for elderly people to understand. Avoid technical jargon. If the element is a button or input, explain what it does or what the user should enter. If the purpose is unclear, say so in a friendly way.`;
+        const prompt = `You are helping someone who doesn't know much about computers understand a webpage. Here is information about something they clicked on:
+
+What it looks like: ${elemInfo.html}
+What it says: ${elemInfo.text}
+What type it is: ${elemInfo.tag}
+What it's for: ${elemInfo.type}
+Label: ${elemInfo.ariaLabel}
+Hint text: ${elemInfo.placeholder}
+
+The person asks: '${question}'
+
+Please give a clear, simple answer that's easy to understand. Don't use computer words. If it's a button, explain what happens when you click it. If it's a box to fill in, explain what to type. If you're not sure what it does, just say so in a friendly way.`;
         fetch("https://router.huggingface.co/novita/v3/openai/chat/completions", {
             method: "POST",
             headers: {
@@ -405,42 +416,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function showHowItWorksGuide() {
     const guideBox = document.getElementById('guideBox');
-    const howItWorksContent = `**How Page Guide Assistant Works**
+    const howItWorksContent = `**How the Page Guide Helper Works**
 
-This extension helps you understand and navigate web pages more easily. Here's how to use its features:
+This helper makes websites easier to understand and use. Here's what it can do for you:
 
-**Generate Guide**
-Click "Generate Guide" to create an AI-powered explanation of the current webpage. This will:
-- Analyze the page's main features and purpose
-- Create helpful tooltips for important elements
-- Save the guide for future visits to this site
+**Create a Guide**
+Click "Create Guide" to get help with the current website. This will:
+- Look at the page and explain what it's for
+- Create helpful tips that pop up when you point at buttons and links
+- Save the guide so you can use it again later
 
-**Interactive Tooltips**
-After generating a guide, you can:
-- **Hover your mouse** over buttons, links, and input fields on the webpage
-- See helpful explanations appear in small popup tooltips
-- Get simple, clear descriptions of what each element does
+**Helpful Pop-up Tips**
+After creating a guide, you can:
+- **Point your mouse** at any button, link, or text box on the website
+- See small pop-up messages that explain what each thing does
+- Get simple, clear explanations in everyday language
 
-**Accessible Mode**
-Click "Enable Accessible Mode" to:
-- Make the page more readable with enhanced visual features
-- Improve contrast and text visibility
-- Add extra navigation aids
+**Easy Reading Mode**
+Click "Turn On Easy Reading Mode" to:
+- Make the page easier to read with better colors and bigger text
+- Improve how clear things look on the screen
 
 **Saved Guides**
-- Your generated guides are automatically saved
-- Click on any guide in the sidebar to view it again
-- Guides are organized by folder for easy browsing
+- Your guides are automatically saved for next time
+- Click on any created guide in the list to read it again
+- Click on ready-made guides for extra information on common actions
 
-**Getting Help**
-- Right-click on any webpage element and select "Ask About This Element" to get specific help
-- The AI will explain what that particular button, field, or link is for
+**Getting Help with Specific Things**
+- Right-click on any button, link, or box on a webpage
+- Select "Ask About This Part of the Page" to get specific help
+- The helper will explain exactly what that particular thing is for
 
-**Getting Started:**
-1. Visit any webpage you want to understand better
-2. Open this extension popup
-3. Click "Generate Guide" and wait a moment
-4. Once generated, hover over elements on the page to see helpful tooltips!`;
+**How to Get Started:**
+1. Go to any website you want help with
+2. Open this helper window
+3. Click "Create Guide" and wait a moment
+4. Once it's ready, point your mouse at things on the page to see helpful tips!
+
+The helper is designed to make the internet easier and less confusing for everyone.`;
 
     guideBox.innerHTML = marked.parse(howItWorksContent);
 }

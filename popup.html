@@ -104,7 +104,7 @@
             color: #2c3e50;
         }
 
-        #generateGuide {
+        .sidebar-button {
             margin: 3px 0px 10px 0px;
             padding: 10px 12px;
             font-weight: 600;
@@ -118,26 +118,16 @@
             width: 100%;
         }
 
-        #generateGuide:hover {
+        .sidebar-button:hover {
             background-color: #303f9f;
         }
 
-        #accessibleMode {
-            margin: 3px 0px 10px 0px;
-            padding: 10px 12px;
-            font-weight: 600;
-            font-size: 14px;
-            color: white;
-            background-color: #3f51b5;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.25s;
-            width: 100%;
+        #howItWorks {
+            background-color: #35bb00;
         }
 
-        #accessibleMode:hover {
-            background-color: #303f9f;
+        #howItWorks:hover {
+            background-color: #1ba000;
         }
 
         #guideBox code {
@@ -164,8 +154,9 @@
 <h3>Page Guide Assistant</h3>
 <div id="container">
     <div id="sidebar">
-        <button id="accessibleMode">Enable Accessible Mode</button>
-        <button id="generateGuide">Generate Guide</button>
+        <button id="howItWorks" class="sidebar-button">Instructions</button>
+        <button id="accessibleMode" class="sidebar-button">Enable Accessible Mode</button>
+        <button id="generateGuide" class="sidebar-button">Generate Guide</button>
         <h4>Guides</h4>
         <div id="folders"><em>Loading guides...</em></div>
     </div>

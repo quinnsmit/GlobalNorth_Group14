@@ -340,8 +340,7 @@ async function init() {
                     const guideBox = document.getElementById('guideBox');
                     guideBox.innerHTML = `<strong>AI Guide:</strong>` + marked.parse(data[urlKey]);
                 } else {
-                    // Show a premade guide as fallback
-                    showGuideContent(premadeGuides[0]);
+                    showHowItWorksGuide();
                 }
             });
         }
@@ -404,3 +403,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
+function showHowItWorksGuide() {
+    const guideBox = document.getElementById('guideBox');
+    const howItWorksContent = `**How Page Guide Assistant Works**
+
+This extension helps you understand and navigate web pages more easily. Here's how to use its features:
+
+**Generate Guide**
+Click "Generate Guide" to create an AI-powered explanation of the current webpage. This will:
+- Analyze the page's main features and purpose
+- Create helpful tooltips for important elements
+- Save the guide for future visits to this site
+
+**Interactive Tooltips**
+After generating a guide, you can:
+- **Hover your mouse** over buttons, links, and input fields on the webpage
+- See helpful explanations appear in small popup tooltips
+- Get simple, clear descriptions of what each element does
+
+**Accessible Mode**
+Click "Enable Accessible Mode" to:
+- Make the page more readable with enhanced visual features
+- Improve contrast and text visibility
+- Add extra navigation aids
+
+**Saved Guides**
+- Your generated guides are automatically saved
+- Click on any guide in the sidebar to view it again
+- Guides are organized by folder for easy browsing
+
+**Getting Help**
+- Right-click on any webpage element and select "Ask About This Element" to get specific help
+- The AI will explain what that particular button, field, or link is for
+
+**Getting Started:**
+1. Visit any webpage you want to understand better
+2. Open this extension popup
+3. Click "Generate Guide" and wait a moment
+4. Once generated, hover over elements on the page to see helpful tooltips!`;
+
+    guideBox.innerHTML = marked.parse(howItWorksContent);
+}
+
+document.getElementById('howItWorks').addEventListener('click', () => {
+    showHowItWorksGuide();
+});

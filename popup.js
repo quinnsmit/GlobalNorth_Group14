@@ -416,7 +416,7 @@ Please give a clear, simple answer that's easy to understand. Don't use computer
 
 function showHowItWorksGuide() {
     const guideBox = document.getElementById('guideBox');
-    const howItWorksContent = `**How the Page Guide Helper Works**
+    const howItWorksContent = `**How the Website Helper Works**
 
 This helper makes websites easier to understand and use. Here's what it can do for you:
 

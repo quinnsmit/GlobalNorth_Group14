@@ -233,7 +233,7 @@ function injectTooltipStyles() {
         askOverlay.style.gap = '8px';
         askOverlay.style.userSelect = 'auto';
         askOverlay.innerHTML = `
-            <label style="font-weight:600;">Ask about this element:</label>
+            <label style="font-weight:600;">Ask a question about this element; Answer will be provided in the box</label>
             <input id="askElemInput" type="text" placeholder="e.g. What does this do?" style="font-size:16px;padding:6px;border-radius:4px;border:1px solid #bbb;outline:none;" />
             <button id="askElemBtn" style="background:#3f51b5;color:#fff;border:none;padding:7px 0;border-radius:4px;font-size:16px;cursor:pointer;">Ask</button>
             <button id="closeAskElem" style="background:#eee;color:#333;border:none;padding:4px 0;border-radius:4px;font-size:13px;cursor:pointer;">Close</button>

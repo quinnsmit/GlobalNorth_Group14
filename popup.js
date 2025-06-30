@@ -355,6 +355,7 @@ init();
 let accessibleModeOn = false;
 
 const accessibleBtn = document.getElementById('accessibleMode');
+
 if (accessibleBtn) {
     accessibleBtn.addEventListener('click', async () => {
         accessibleModeOn = !accessibleModeOn;
@@ -365,9 +366,16 @@ if (accessibleBtn) {
             enabled: accessibleModeOn
         });
 
-        accessibleBtn.textContent = accessibleModeOn ? 'Turn Off Easy Reading Mode' : 'Turn On Easy Reading Mode';
+        if (accessibleModeOn) {
+            accessibleBtn.textContent = 'Stop Readable Mode';
+            accessibleBtn.style.backgroundColor = '#d32f2f'; // red
+        } else {
+            accessibleBtn.textContent = 'Start Readable Mode';
+            accessibleBtn.style.backgroundColor = '#35bb00'; // green
+        }
     });
 }
+
 
 // === Ask About This Element Feature ===
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
